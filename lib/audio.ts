@@ -1,0 +1,7 @@
+let audio: AudioContext | null = null;
+let sources: AudioScheduledSourceNode[]=[];
+export async function context(){if(!audio)audio=new (window.AudioContext||(window as unknown as {webkitAudioContext:typeof AudioContext}).webkitAudioContext)();if(audio.state==='suspended')await audio.resume();return audio;}
+export function stopDemo(){for(const node of sources){try{node.stop()}catch{}}sources=[];}
+export function tone(ctx:AudioContext,midi:number,time:number,duration=.42,volume=.18){const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=440*Math.pow(2,(midi-69)/12);g.gain.setValueAtTime(0,time);g.gain.linearRampToValueAtTime(volume,time+.008);g.gain.exponentialRampToValueAtTime(.001,time+duration);o.connect(g);g.connect(ctx.destination);o.start(time);o.stop(time+duration+.03);sources.push(o);o.onended=()=>{sources=sources.filter(x=>x!==o);o.disconnect();g.disconnect();};}
+export async function playNotes(notes:number[],bpm=70){document.querySelectorAll("audio").forEach(a=>a.pause());stopDemo();const ctx=await context();const start=ctx.currentTime+.06;notes.forEach((note,i)=>tone(ctx,note,start+i*60/bpm,Math.min(.6,60/bpm*.8)));}
+export function click(ctx:AudioContext,time:number,accent:boolean,volume=.2){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=accent?1200:820;g.gain.setValueAtTime(volume,time);g.gain.exponentialRampToValueAtTime(.001,time+.045);o.connect(g);g.connect(ctx.destination);o.start(time);o.stop(time+.05);o.onended=()=>{o.disconnect();g.disconnect()};}
